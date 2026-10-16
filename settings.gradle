@@ -1,1 +1,4 @@
+rootProject.name = 'Pocket-Terminal'
 include ':app', ':termux-shared', ':terminal-emulator', ':terminal-view'
+include ':termux-am-library'
+project(':termux-am-library').projectDir = file('third_party/termux-am-library')

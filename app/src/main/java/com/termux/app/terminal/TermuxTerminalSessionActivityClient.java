@@ -302,6 +302,7 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
         // be stale, like current session not selected or scrolled to.
         checkAndScrollToSession(session);
         updateBackgroundColor();
+        mActivity.refreshStudioChrome();
     }
 
     void notifyOfSessionChange() {
@@ -362,6 +363,11 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     }
 
     public void addNewSession(boolean isFailSafe, String sessionName) {
+        addNewSessionInDirectory(isFailSafe, sessionName, null);
+    }
+
+    /** Start a shell with a working-directory argument, without writing commands into the PTY. */
+    public void addNewSessionInDirectory(boolean isFailSafe, String sessionName, String requestedDirectory) {
         TermuxService service = mActivity.getTermuxService();
         if (service == null) return;
 
@@ -372,7 +378,9 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
             TerminalSession currentSession = mActivity.getCurrentSession();
 
             String workingDirectory;
-            if (currentSession == null) {
+            if (requestedDirectory != null) {
+                workingDirectory = requestedDirectory;
+            } else if (currentSession == null) {
                 workingDirectory = mActivity.getProperties().getDefaultWorkingDirectory();
             } else {
                 workingDirectory = currentSession.getCwd();

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="studio_brand">Pocket-Terminal</string>
+    <string name="studio_preparing">PREPARING ENVIRONMENT</string>
+    <plurals name="studio_session_count">
+        <item quantity="one">ON DEVICE · %1$d SESSION</item>
+        <item quantity="other">ON DEVICE · %1$d SESSIONS</item>
+    </plurals>
+    <string name="studio_shell_number">shell %1$d</string>
+    <string name="studio_exited">exited</string>
+    <string name="studio_projects">Projects</string>
+    <string name="studio_sessions">Sessions</string>
+    <string name="studio_keyboard">Keyboard</string>
+    <string name="studio_actions">Quick actions</string>
+    <string name="studio_find_action">Find an action…</string>
+    <string name="studio_new_shell">New shell</string>
+    <string name="studio_named_shell">Named or failsafe shell</string>
+    <string name="studio_rename_shell">Rename current shell</string>
+    <string name="studio_enter_focus">Enter focus mode</string>
+    <string name="studio_leave_focus">Leave focus mode</string>
+    <string name="studio_toggle_focus">Toggle focus mode</string>
+    <string name="studio_larger_text">Increase terminal font size</string>
+    <string name="studio_smaller_text">Decrease terminal font size</string>
+    <string name="studio_extra_keys">Show or hide extra keys</string>
+    <string name="studio_settings">Settings</string>
+    <string name="studio_browse_home">Browse home directory</string>
+    <string name="studio_enter_path">Enter directory path</string>
+    <string name="studio_directory_hint">~/projects or /storage/emulated/0/Projects</string>
+    <string name="studio_browse">Browse folders</string>
+    <string name="studio_open_here">Open shell here</string>
+    <string name="studio_parent_folder">↑ Parent folder</string>
+    <string name="studio_forget_project">Remove from saved projects</string>
+    <string name="studio_loading_folders">Loading folders…</string>
+    <string name="studio_unreadable_directory">Cannot read this directory.</string>
+    <string name="studio_wait_for_shell">Wait for the initial shell to finish starting.</string>
+    <string name="studio_open_projects_at">Open projects. Current directory: %1$s</string>
+</resources>

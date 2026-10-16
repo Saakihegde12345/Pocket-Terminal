@@ -194,6 +194,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     private static final String LOG_TAG = "TermuxActivity";
 
+    private com.termux.app.studio.StudioChrome mStudioChrome;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Logger.logDebug(LOG_TAG, "onCreate");
@@ -251,6 +253,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
         setToggleKeyboardView();
 
+        mStudioChrome = new com.termux.app.studio.StudioChrome(this);
+
         registerForContextMenu(mTerminalView);
 
         FileReceiverActivity.updateFileReceiverActivityComponentsState(this);
@@ -299,6 +303,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             addTermuxActivityRootViewGlobalLayoutListener();
 
         registerTermuxActivityBroadcastReceiver();
+        refreshStudioChrome();
     }
 
     @Override
@@ -346,6 +351,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     @Override
     public void onDestroy() {
+        if (mStudioChrome != null) mStudioChrome.close();
+        mStudioChrome = null;
         super.onDestroy();
 
         Logger.logDebug(LOG_TAG, "onDestroy");
@@ -857,6 +864,11 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     public void termuxSessionListNotifyUpdated() {
         mTermuxSessionListViewController.notifyDataSetChanged();
+        refreshStudioChrome();
+    }
+
+    public void refreshStudioChrome() {
+        if (mStudioChrome != null) mStudioChrome.refresh();
     }
 
     public boolean isVisible() {
