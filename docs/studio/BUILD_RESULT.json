@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-16",
+  "base_commit": "8629e632fcb95da272221be327db653fb24befe9",
+  "apk": {
+    "filename": "Pocket-Terminal_pocket-terminal-dev_universal.apk",
+    "size_bytes": 126255353,
+    "sha256": "290f371b644cfb139b6403b5963c3ed23689f7862b1f971f642e635669d87ea8",
+    "application_id": "com.termux",
+    "application_label": "Pocket-Terminal (Dev)",
+    "version_name": "0.1.0-pocket-dev",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "signature_verified": true
+  },
+  "unit_tests": {
+    "app": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "terminal-emulator": {
+      "tests": 145,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "workspace_path_checks": 19,
+  "physical_device_tested": false,
+  "github_workflow_run": false
+}
