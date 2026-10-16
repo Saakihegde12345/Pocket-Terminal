@@ -1,0 +1,32 @@
+name: Publish tested Pocket-Terminal source once
+
+on:
+  push:
+    branches: [ pocket-source-import ]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.repository == 'Saakihegde12345/Pocket-Terminal'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify bundle and add tested source with a normal commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '3dee2babddd5501ac5beb9e441ac32f6e9823e3e4dc09115cfd48ca564f2a715  Pocket-Terminal-source.bundle' | sha256sum --check
+          git bundle verify ./Pocket-Terminal-source.bundle
+          git fetch --no-tags ./Pocket-Terminal-source.bundle refs/heads/main:refs/remotes/pocket-source/main
+          test "$(git rev-parse refs/remotes/pocket-source/main)" = fed68b401ab30e2785f3bf58096800c9ef706799
+          test "$(git rev-parse refs/remotes/pocket-source/main^{tree})" = 0b81b942b7e113ee9ee85340e215883be60a10a2
+          git fetch origin main
+          test "$(git rev-parse refs/remotes/origin/main)" = 73599a586acddf742b98e1064a1049ead07eebc9
+          git diff --exit-code refs/remotes/origin/main refs/remotes/pocket-source/main -- .github/workflows/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          publish_commit=$(git commit-tree refs/remotes/pocket-source/main^{tree} -p refs/remotes/origin/main -p refs/remotes/pocket-source/main -m 'feat: publish tested Pocket-Terminal source')
+          git push origin "$publish_commit:refs/heads/main"
