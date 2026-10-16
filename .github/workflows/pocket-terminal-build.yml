@@ -1,0 +1,50 @@
+name: Pocket-Terminal development APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TERMUX_PACKAGE_VARIANT: apt-android-7
+      TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS: "0"
+      TERMUX_APP_VERSION_NAME: "0.1.0-pocket-dev"
+      TERMUX_APK_VERSION_TAG: "pocket-terminal-dev"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Check source and path handling
+        run: python3 tools/check_source.py
+      - name: Install required Android SDK components
+        run: |
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" "build-tools;35.0.0" "ndk;29.0.14206865"
+      - name: Compile and run Android unit tests
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 :app:assembleDebug :app:testDebugUnitTest :terminal-emulator:testDebugUnitTest
+      - uses: actions/upload-artifact@v6
+        with:
+          name: Pocket-Terminal-development-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: Pocket-Terminal-unit-test-results
+          path: |
+            app/build/reports/tests/
+            terminal-emulator/build/reports/tests/
+          if-no-files-found: ignore
