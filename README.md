@@ -9,6 +9,9 @@ This is a first native implementation, not a finished production release. The An
 - Native workspace header, live session tabs, new-shell control and long-press session renaming.
 - Searchable quick actions for shells, keyboard, font size, extra keys, settings and projects.
 - Persistent focus mode. Tap the logo to restore the full workspace UI.
+- Search real terminal output in a full-height, read-only inspector, with highlighted matches, previous/next navigation, case matching and manual snapshot refresh.
+- Searchable, editable command snippets with preview and explicit insertion into the selected session, without sending Enter.
+- Four persistent workspace accents: Lime, Glacier, Orchid and Amber. Terminal color/font files remain under the existing terminal settings.
 - Directory browsing and saved project paths. A selected directory starts a new shell with that working directory; paths are never inserted into shell command text.
 - Compact chrome when the app window has little vertical space.
 - The existing terminal renderer, input handling, shell lifecycle, extra keys, bootstrap downloader and package environment are retained.
@@ -48,11 +51,30 @@ For phone storage first run `termux-setup-storage` and grant its requested permi
 
 The directory breadcrumb refreshes on session/title/lifecycle events. It can lag after `cd` if the shell does not emit a title change.
 
+## Workspace tools
+
+The bottom bar opens **Search**, **Projects**, **Snippets** and **Keyboard**. The header's **Quick actions** button also exposes these tools, the session drawer, appearance and focus mode.
+
+**Search** captures the current session's visible output and scrollback. Soft-wrapped rows join into one searchable line. Type literal text, use **↑ / ↓** to move through highlighted matches, or toggle **Aa** for case-sensitive search. Long-press output to select/copy text. **Refresh** captures later output; the terminal continues running while the inspector is open. Snapshots keep the most recent 2,000 terminal rows, up to 200,000 UTF-16 characters, and search navigation shows up to 2,000 non-overlapping matches. The UI reports when a snapshot or match limit is reached. Nothing is written to the PTY by search.
+
+**Snippets** starts with three editable examples. Tap a snippet to preview its exact command and target session, then choose **Insert** to paste it into that session's active program. It sends no Enter; the active program handles the pasted input. Choose **Edit** to change or delete an entry, or **New snippet** to save your own. Up to 50 single-line commands are stored locally. Newlines, tabs and control characters are rejected rather than silently changing the command. Deleting every example leaves an empty library.
+
+Choose **Quick actions → Workspace accent → Apply** to save a color choice. This recreates the interface around the existing shell service. Focus mode, projects and snippets remain saved.
+
+Hardware keyboard shortcuts follow the existing Ctrl+Alt convention and honor the setting that disables hardware shortcuts:
+
+| Shortcut | Action |
+| --- | --- |
+| Ctrl+Alt+Space | Quick actions |
+| Ctrl+Alt+F | Search output |
+| Ctrl+Alt+S | Snippets |
+| Ctrl+Alt+A | Workspace accent |
+
 ## Validation and next work
 
 Read [VERIFICATION.md](docs/studio/VERIFICATION.md) for actual check results, [FEATURE_MATRIX.md](docs/studio/FEATURE_MATRIX.md) for capability scope, and [IMPLEMENTATION.md](docs/studio/IMPLEMENTATION.md) for integration details.
 
-The universal development APK builds successfully. All 147 app/terminal-emulator unit tests and 19 filesystem-path checks passed; APK branding and its signature were verified. Device rendering, interactive package installs and performance benchmarks remain untested. The latest local build record is [BUILD_RESULT.json](docs/studio/BUILD_RESULT.json).
+The workspace-tools universal development APK builds successfully. All 155 app/terminal-emulator unit tests and 59 SDK-independent path/search/snippet checks passed. Its signature and four ABI directories were verified. See [VERIFICATION.md](docs/studio/VERIFICATION.md) and [WORKSPACE_TOOLS_BUILD_RESULT.json](docs/studio/WORKSPACE_TOOLS_BUILD_RESULT.json) for the results. Device rendering, interactive package installs and performance benchmarks remain untested. The original foundation artifact is recorded separately in [BUILD_RESULT.json](docs/studio/BUILD_RESULT.json).
 
 ## Origin and license
 
