@@ -25,6 +25,9 @@ with tempfile.TemporaryDirectory(prefix="terminal-studio-check-") as directory:
     run("java", "-m", "jdk.compiler/com.sun.tools.javac.Main", "--release", "8", "-d", directory,
         STUDIO / "OutputSearch.java", STUDIO / "CommandSnippet.java", ROOT / "tools/checks/WorkspaceToolsCheck.java")
     run("java", "-cp", directory, "WorkspaceToolsCheck")
+    run("java", "-m", "jdk.compiler/com.sun.tools.javac.Main", "--release", "8", "-d", directory,
+        STUDIO / "WorkspaceFiles.java", ROOT / "tools/checks/WorkspaceFilesCheck.java")
+    run("java", "-cp", directory, "WorkspaceFilesCheck")
     run("java", ROOT / "tools/checks/ParseJava.java", *JAVA)
 
 resources = ET.parse(ROOT / "app/src/main/res/values/strings_studio.xml").getroot()
