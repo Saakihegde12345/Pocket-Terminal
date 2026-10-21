@@ -12,6 +12,7 @@ JAVA = sorted(STUDIO.glob("*.java")) + [
     ROOT / "app/src/main/java/com/termux/app/TermuxActivity.java",
     ROOT / "app/src/main/java/com/termux/app/terminal/TermuxTerminalSessionActivityClient.java",
     ROOT / "app/src/main/java/com/termux/app/terminal/TermuxSessionsListViewController.java",
+    ROOT / "app/src/main/java/com/termux/app/terminal/TermuxTerminalViewClient.java",
 ]
 
 def run(*args):
@@ -21,13 +22,16 @@ with tempfile.TemporaryDirectory(prefix="terminal-studio-check-") as directory:
     run("java", "-m", "jdk.compiler/com.sun.tools.javac.Main", "--release", "8", "-d", directory,
         STUDIO / "WorkspacePaths.java", ROOT / "tools/checks/WorkspacePathsCheck.java")
     run("java", "-cp", directory, "WorkspacePathsCheck")
+    run("java", "-m", "jdk.compiler/com.sun.tools.javac.Main", "--release", "8", "-d", directory,
+        STUDIO / "OutputSearch.java", STUDIO / "CommandSnippet.java", ROOT / "tools/checks/WorkspaceToolsCheck.java")
+    run("java", "-cp", directory, "WorkspaceToolsCheck")
     run("java", ROOT / "tools/checks/ParseJava.java", *JAVA)
 
 resources = ET.parse(ROOT / "app/src/main/res/values/strings_studio.xml").getroot()
-known = {(node.tag, node.attrib["name"]) for node in resources}
+known = {(node.tag.replace("string-array", "array"), node.attrib["name"]) for node in resources}
 known.update(("drawable", path.stem) for path in (ROOT / "app/src/main/res/drawable").glob("studio_*.xml"))
 for path in JAVA:
-    for kind, name in re.findall(r"R\.(string|plurals|drawable)\.(studio_[a-z_]+)", path.read_text()):
+    for kind, name in re.findall(r"R\.(string|plurals|drawable|array)\.(studio_[a-z_]+)", path.read_text()):
         assert (kind, name) in known, f"Unresolved resource {kind}/{name}: {path}"
 for path in (ROOT / "app/src/main/res").rglob("studio_*.xml"):
     ET.parse(path)

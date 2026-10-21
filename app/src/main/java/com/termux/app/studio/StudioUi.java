@@ -2,15 +2,19 @@
 package com.termux.app.studio;
 
 import android.content.Context;
+import android.app.AlertDialog;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.text.TextUtils;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 
 /** Styling for app chrome only. Never changes a user's terminal color scheme. */
 final class StudioUi {
@@ -21,8 +25,57 @@ final class StudioUi {
     static final int ACCENT = Color.rgb(198, 248, 104);
     static final int BORDER = Color.rgb(43, 54, 46);
     static final int SELECTED = Color.rgb(36, 48, 25);
+    static final String PREFERENCES = "terminal_studio_ui_v1";
+    static final String ACCENT_KEY = "workspace_accent_v1";
+    static final String[] ACCENT_IDS = {"lime", "glacier", "orchid", "amber"};
+    static final int[] ACCENT_COLORS = {ACCENT, 0xff80dcff, 0xffd4b0ff, 0xffffce80};
 
     private StudioUi() {}
+
+    static int accentIndex(Context context) {
+        String saved = context.getSharedPreferences(PREFERENCES, 0).getString(ACCENT_KEY, ACCENT_IDS[0]);
+        for (int i = 0; i < ACCENT_IDS.length; i++) if (ACCENT_IDS[i].equals(saved)) return i;
+        return 0;
+    }
+
+    static int accent(Context context) { return ACCENT_COLORS[accentIndex(context)]; }
+
+    static int selectedSurface(Context context) {
+        int color = accent(context);
+        return Color.rgb((Color.red(color) + 4 * Color.red(SURFACE)) / 5,
+            (Color.green(color) + 4 * Color.green(SURFACE)) / 5,
+            (Color.blue(color) + 4 * Color.blue(SURFACE)) / 5);
+    }
+
+    static LinearLayout column(Context context) {
+        LinearLayout body = new LinearLayout(context);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setBackgroundColor(SURFACE);
+        int inset = dp(context, 16);
+        body.setPadding(inset, dp(context, 8), inset, dp(context, 12));
+        return body;
+    }
+
+    static EditText input(Context context, int hint) {
+        EditText input = new EditText(context);
+        input.setTextColor(TEXT);
+        input.setHintTextColor(MUTED);
+        input.setHint(hint);
+        input.setSingleLine(true);
+        input.setTextSize(15);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setBackgroundTintList(ColorStateList.valueOf(accent(context)));
+        input.setMinHeight(dp(context, 48));
+        return input;
+    }
+
+    static void styleDialog(Context context, AlertDialog dialog) {
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawableResource(android.R.color.background_dark);
+        for (int button : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL}) {
+            TextView view = dialog.getButton(button);
+            if (view != null) view.setTextColor(accent(context));
+        }
+    }
 
     static int dp(Context context, float value) {
         return Math.round(value * context.getResources().getDisplayMetrics().density);
@@ -39,7 +92,7 @@ final class StudioUi {
     }
 
     static TextView button(Context context, String label, String description, boolean selected) {
-        TextView button = text(context, label, 13, selected ? ACCENT : TEXT);
+        TextView button = text(context, label, 13, selected ? accent(context) : TEXT);
         button.setGravity(Gravity.CENTER);
         button.setSingleLine(true);
         button.setEllipsize(TextUtils.TruncateAt.END);
@@ -51,7 +104,7 @@ final class StudioUi {
         button.setFocusable(true);
         button.setClickable(true);
         button.setSelected(selected);
-        button.setBackground(ripple(context, selected ? SELECTED : SURFACE, 11));
+        button.setBackground(ripple(context, selected ? selectedSurface(context) : SURFACE, 11));
         button.setAccessibilityDelegate(new View.AccessibilityDelegate() {
             @Override
             public void onInitializeAccessibilityNodeInfo(View host,
@@ -67,6 +120,6 @@ final class StudioUi {
         GradientDrawable shape = new GradientDrawable();
         shape.setColor(color);
         shape.setCornerRadius(dp(context, radius));
-        return new RippleDrawable(ColorStateList.valueOf(0x33c6f868), shape, null);
+        return new RippleDrawable(ColorStateList.valueOf((accent(context) & 0x00ffffff) | 0x33000000), shape, null);
     }
 }

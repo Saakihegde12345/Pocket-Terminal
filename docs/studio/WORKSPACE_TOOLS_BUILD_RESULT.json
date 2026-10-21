@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-21",
+  "base_commit": "4896ed88045201dbd10de79071747e7dc910dc85",
+  "feature_branch": "feature/workspace-tools",
+  "features": [
+    "output snapshot search",
+    "saved command snippets",
+    "four persistent workspace accents",
+    "hardware shortcuts"
+  ],
+  "apk": {
+    "filename": "Pocket-Terminal_workspace-tools-dev_universal.apk",
+    "size_bytes": 125084032,
+    "sha256": "58ab8b346e46a24461f15dfab4943b71d1452c6b14d98089b099c861ef896fad",
+    "application_id": "com.termux",
+    "version_name": "0.2.0-pocket-dev",
+    "version_code": 118,
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "signature_v1": true,
+    "signature_v2": true,
+    "key": "upstream public development key"
+  },
+  "verification": {
+    "app_unit_tests": 10,
+    "terminal_emulator_unit_tests": 145,
+    "unit_test_failures": 0,
+    "unit_test_errors": 0,
+    "unit_test_skips": 0,
+    "path_checks": 19,
+    "workspace_tool_checks": 40,
+    "java_syntax_files": 14,
+    "resource_checks": "passed",
+    "repository_imports": "passed",
+    "device_ui_acceptance": "not performed",
+    "performance_benchmarks": "not performed"
+  },
+  "publication": "local build verified; feature update remote CI pending"
+}

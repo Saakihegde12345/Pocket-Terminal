@@ -34,6 +34,8 @@ public final class StudioChrome {
     private final TermuxActivity activity;
     private final SharedPreferences preferences;
     private final StudioProjectPicker projects;
+    private final StudioOutputSearch outputSearch;
+    private final StudioSnippets snippets;
     private final LinearLayout root;
     private final LinearLayout header;
     private final TextView directory;
@@ -47,6 +49,7 @@ public final class StudioChrome {
     private boolean refreshQueued;
     private String sessionFingerprint = "";
     private AlertDialog palette;
+    private AlertDialog appearance;
 
     private final Runnable refreshTask = this::runRefresh;
 
@@ -67,8 +70,10 @@ public final class StudioChrome {
 
     public StudioChrome(TermuxActivity activity) {
         this.activity = activity;
-        preferences = activity.getSharedPreferences("terminal_studio_ui_v1", 0);
+        preferences = activity.getSharedPreferences(StudioUi.PREFERENCES, 0);
         projects = new StudioProjectPicker(activity, preferences);
+        outputSearch = new StudioOutputSearch(activity);
+        snippets = new StudioSnippets(activity, preferences);
         focusMode = preferences.getBoolean("focus_mode", false);
         root = activity.findViewById(R.id.activity_termux_root_view);
 
@@ -78,7 +83,7 @@ public final class StudioChrome {
         mark.setTextSize(19);
         mark.setTypeface(Typeface.MONOSPACE);
         mark.setTextColor(StudioUi.BACKGROUND);
-        mark.setBackground(StudioUi.ripple(activity, StudioUi.ACCENT, 12));
+        mark.setBackground(StudioUi.ripple(activity, StudioUi.accent(activity), 12));
         mark.setPadding(0, 0, 0, 0);
         mark.setOnClickListener(v -> toggleFocusMode());
         header.addView(mark, new LinearLayout.LayoutParams(dp(48), dp(48)));
@@ -125,8 +130,9 @@ public final class StudioChrome {
 
         navigation = row();
         navigation.setPadding(dp(12), dp(5), dp(12), dp(5));
-        addNavigation(R.string.studio_sessions, () -> activity.getDrawer().openDrawer(Gravity.LEFT), false);
+        addNavigation(R.string.studio_search, this::showSearch, false);
         addNavigation(R.string.studio_projects, projects::showProjects, false);
+        addNavigation(R.string.studio_snippets, this::showSnippets, false);
         addNavigation(R.string.studio_keyboard,
             () -> activity.getTermuxTerminalViewClient().onToggleSoftKeyboardRequest(), false);
         // Keep the upstream bottom-space sentinel as the last child for IME overlap handling.
@@ -159,7 +165,7 @@ public final class StudioChrome {
     private void styleDrawer() {
         activity.findViewById(R.id.left_drawer).setBackgroundColor(StudioUi.SURFACE);
         android.widget.ImageButton settings = activity.findViewById(R.id.settings_button);
-        settings.setColorFilter(StudioUi.ACCENT);
+        settings.setColorFilter(StudioUi.accent(activity));
         settings.setMinimumHeight(dp(48));
         settings.setMinimumWidth(dp(48));
         ViewGroup.LayoutParams settingsSize = settings.getLayoutParams();
@@ -168,7 +174,7 @@ public final class StudioChrome {
         settings.setLayoutParams(settingsSize);
         for (int id : new int[]{R.id.new_session_button, R.id.toggle_keyboard_button}) {
             TextView button = activity.findViewById(id);
-            button.setTextColor(StudioUi.ACCENT);
+            button.setTextColor(StudioUi.accent(activity));
         }
     }
 
@@ -267,10 +273,14 @@ public final class StudioChrome {
         List<Action> all = new ArrayList<>();
         boolean ready = activity.getCurrentSession() != null;
         if (ready) {
+            all.add(action(R.string.studio_search_output, this::showSearch));
             all.add(action(R.string.studio_new_shell, () -> activity.getTermuxTerminalSessionClient().addNewSession(false, null)));
             all.add(action(R.string.studio_named_shell, () -> activity.findViewById(R.id.new_session_button).performLongClick()));
             all.add(action(R.string.studio_rename_shell, () -> activity.getTermuxTerminalSessionClient().renameSession(activity.getCurrentSession())));
         }
+        all.add(action(R.string.studio_snippets, this::showSnippets));
+        all.add(action(R.string.studio_appearance, this::showAppearance));
+        all.add(action(R.string.studio_sessions, () -> activity.getDrawer().openDrawer(Gravity.LEFT)));
         all.add(action(R.string.studio_projects, projects::showProjects));
         all.add(action(R.string.studio_keyboard, () -> activity.getTermuxTerminalViewClient().onToggleSoftKeyboardRequest()));
         all.add(action(focusMode ? R.string.studio_leave_focus : R.string.studio_enter_focus, this::toggleFocusMode));
@@ -319,6 +329,38 @@ public final class StudioChrome {
             if (item != null && !disposed) item.run.run();
         });
         palette.show();
+        StudioUi.styleDialog(activity, palette);
+    }
+
+    public void showSearch() { if (!disposed) outputSearch.show(); }
+
+    public void showSnippets() { if (!disposed) snippets.showLibrary(); }
+
+    public void showAppearance() {
+        if (disposed) return;
+        if (appearance != null) appearance.dismiss();
+        String[] labels = activity.getResources().getStringArray(R.array.studio_accents);
+        final int[] choice = {StudioUi.accentIndex(activity)};
+        ArrayAdapter<String> colors = new ArrayAdapter<String>(activity,
+                android.R.layout.simple_list_item_single_choice, labels) {
+            @Override public View getView(int position, View convertView, ViewGroup parent) {
+                TextView view = (TextView) super.getView(position, convertView, parent);
+                view.setTextColor(StudioUi.ACCENT_COLORS[position]);
+                view.setMinHeight(dp(56));
+                return view;
+            }
+        };
+        appearance = new AlertDialog.Builder(new ContextThemeWrapper(activity, android.R.style.Theme_Material_Dialog_Alert))
+            .setTitle(R.string.studio_appearance)
+            .setSingleChoiceItems(colors, choice[0], (d, which) -> choice[0] = which)
+            .setPositiveButton(R.string.studio_apply_appearance, (d, which) -> {
+                if (choice[0] == StudioUi.accentIndex(activity)) return;
+                preferences.edit().putString(StudioUi.ACCENT_KEY, StudioUi.ACCENT_IDS[choice[0]]).apply();
+                // Recreate only the Activity. Existing shell sessions stay in the bound service.
+                activity.recreate();
+            }).setNegativeButton(android.R.string.cancel, null).create();
+        appearance.show();
+        StudioUi.styleDialog(activity, appearance);
     }
 
     private Action action(int label, Runnable action) { return new Action(activity.getString(label), action); }
@@ -329,6 +371,10 @@ public final class StudioChrome {
         root.removeOnLayoutChangeListener(sizeListener);
         if (palette != null) palette.dismiss();
         palette = null;
+        if (appearance != null) appearance.dismiss();
+        appearance = null;
+        outputSearch.close();
+        snippets.close();
         projects.close();
     }
 }
