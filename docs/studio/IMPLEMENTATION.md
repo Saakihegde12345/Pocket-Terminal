@@ -26,6 +26,14 @@ Charcoal surfaces, lime selection, readable text and 48 dp action targets define
 
 Focus mode hides secondary chrome while leaving the header/logo as a way back. Compact-window thresholds use hysteresis to reduce layout churn. Session state comes from real sessions; there are no simulated process meters.
 
+## Workspace tools
+
+`StudioOutputSearch` owns a full-height native dialog. `OutputSnapshot` reads the active emulator only on the UI thread and bounds the copy to the newest 2,000 rows / 200,000 UTF-16 characters. It honors soft wraps and preserves hard newlines. Search runs on detached strings on a single worker after a 180 ms debounce. `OutputSearch` quotes literal queries, retains original UTF-16 offsets for Unicode highlighting, and caps results at 2,000. Request generations and cancellation discard stale results and scroll callbacks; dismiss/destroy cancels pending work. There is no text-change hook, continuous snapshotting or PTY mutation.
+
+`StudioSnippets` separates library, preview and editor flows. `CommandSnippet` validates names and preserves command text, rejecting newlines, tabs, control characters and malformed surrogate sequences. `SnippetStore` serializes up to 50 entries with stable IDs in private app preferences; deleting the starter entries does not seed them again. Insertion revalidates both text and the exact previewed live session and uses its existing emulator paste path, including bracketed paste when enabled, without adding Enter. It does not assume a shell is waiting for a command.
+
+`StudioUi` resolves one of four saved accents with a fallback to Lime. An explicit Apply recreates only the Activity so the header, tabs, buttons and new dialogs use the same accent; the bound shell service and terminal color files remain owned by their existing paths. Ctrl+Alt+Space/F/S/A use the upstream hardware-shortcut setting and dispatch to null-safe Activity entry points.
+
 ## Development sequence
 
 1. Compile the compatibility build and run upstream unit tests in CI.
