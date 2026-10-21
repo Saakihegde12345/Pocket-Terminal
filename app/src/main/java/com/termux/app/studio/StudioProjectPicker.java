@@ -34,6 +34,7 @@ final class StudioProjectPicker {
 
     private final TermuxActivity activity;
     private final SharedPreferences preferences;
+    private final StudioFileBrowser files;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final File home = TermuxConstants.TERMUX_HOME_DIR;
     private boolean closed;
@@ -43,6 +44,7 @@ final class StudioProjectPicker {
     StudioProjectPicker(TermuxActivity activity, SharedPreferences preferences) {
         this.activity = activity;
         this.preferences = preferences;
+        files = new StudioFileBrowser(activity, directory -> resolve(directory.getPath(), this::open));
     }
 
     private AlertDialog.Builder builder() {
@@ -139,6 +141,7 @@ final class StudioProjectPicker {
                     List<String> labels = new ArrayList<>();
                     labels.add(activity.getString(R.string.studio_open_here));
                     labels.add(activity.getString(R.string.studio_parent_folder));
+                    labels.add(activity.getString(R.string.studio_project_files));
                     int shown = Math.min(result.length, MAX_VISIBLE_DIRECTORIES);
                     for (int i = 0; i < shown; i++) labels.add("▸ " + WorkspacePaths.safeLabel(result[i].getName()));
                     String title = WorkspacePaths.safeLabel(WorkspacePaths.displayPath(directory.getPath(), home.getPath()));
@@ -149,7 +152,8 @@ final class StudioProjectPicker {
                             else if (which == 1) {
                                 File parent = directory.getParentFile();
                                 if (parent != null) browse(parent.getPath()); else browse(directory.getPath());
-                            } else browse(result[which - 2].getPath());
+                            } else if (which == 2) files.show(directory);
+                            else browse(result[which - 3].getPath());
                         })
                         .setNegativeButton(R.string.studio_projects, (d, which) -> showProjects()).create();
                     show(picker);
@@ -160,10 +164,12 @@ final class StudioProjectPicker {
 
     private void showDirectoryActions(File directory) {
         String[] actions = {activity.getString(R.string.studio_open_here), activity.getString(R.string.studio_browse),
+            activity.getString(R.string.studio_project_files),
             activity.getString(R.string.studio_forget_project)};
         show(builder().setTitle(WorkspacePaths.safeLabel(directory.getName())).setItems(actions, (d, which) -> {
             if (which == 0) resolve(directory.getPath(), this::open);
             else if (which == 1) browse(directory.getPath());
+            else if (which == 2) files.show(directory);
             else {
                 Set<String> paths = new HashSet<>(preferences.getStringSet(SAVED_PATHS, new HashSet<>()));
                 paths.remove(directory.getPath());
@@ -197,6 +203,7 @@ final class StudioProjectPicker {
 
     void close() {
         closed = true;
+        files.close();
         generation++;
         if (dialog != null) dialog.dismiss();
         dialog = null;
