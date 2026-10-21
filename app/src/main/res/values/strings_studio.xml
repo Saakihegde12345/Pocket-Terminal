@@ -78,4 +78,21 @@
         <item>Orchid · violet</item>
         <item>Amber · warm</item>
     </string-array>
+    <string name="studio_project_files">Project files</string>
+    <string name="studio_close_files">Close project files</string>
+    <string name="studio_filter_files">Filter this folder</string>
+    <string name="studio_show_hidden_files">Toggle hidden files</string>
+    <string name="studio_hidden_off">Hidden: off</string>
+    <string name="studio_hidden_on">Hidden: on</string>
+    <string name="studio_refresh_files">Reload folder or file preview</string>
+    <string name="studio_copy_path">Copy path</string>
+    <string name="studio_path_copied">Path copied</string>
+    <string name="studio_back_to_folder">Back to folder</string>
+    <string name="studio_loading_files">Loading…</string>
+    <string name="studio_files_count">%1$d of %2$d entries · filter to narrow this folder</string>
+    <string name="studio_file_bytes">Read-only UTF-8 preview · %1$d bytes</string>
+    <string name="studio_file_folder_label">Folder: %1$s</string>
+    <string name="studio_file_preview_label">Preview file: %1$s</string>
+    <string name="studio_files_note">Read-only · 200 entries per view · UTF-8 previews up to 256 KiB. Long-press text to copy.</string>
+    <string name="studio_files_unreadable">Unable to read this folder or file.</string>
 </resources>

@@ -17,7 +17,7 @@ jobs:
     env:
       TERMUX_PACKAGE_VARIANT: apt-android-7
       TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS: "0"
-      TERMUX_APP_VERSION_NAME: "0.1.0-pocket-dev"
+      TERMUX_APP_VERSION_NAME: "0.3.0-pocket-dev"
       TERMUX_APK_VERSION_TAG: "pocket-terminal-dev"
     steps:
       - uses: actions/checkout@v7

@@ -53,3 +53,12 @@ Use tmux for panes in this foundation. CLI packages remain responsible for SSH, 
 - Worker cancellation prevents old dialogs from reopening.
 - Restoring saved UI metadata does not pretend to restore an OS-killed process.
 - Performance claims must come from measurements, not the choice of toolkit.
+
+
+## Project files
+
+`StudioFileBrowser` is owned and closed by `StudioProjectPicker`. A selected project or browsed directory becomes the browser root. `WorkspaceFiles` resolves canonical paths, enforces that root boundary, lists folders before files and keeps at most 200 sorted entries. Filename filtering occurs before the visible-entry cap. Hidden files are opt-in for each panel. Directory enumeration still uses Android-compatible `File.list()`, which enumerates the directory before selecting visible entries.
+
+File and directory I/O runs on a single worker; cancellation and generation checks discard results after navigation, query changes, dialog dismissal or Activity destruction. Preview reads enforce a 256 KiB cap both before and during reading, reject malformed UTF-8 and binary/control data, and publish only a detached string to the UI. Text is selectable, read-only and never rendered as HTML or executed. There are no file-write or network operations. The explicit copy action places only the selected path on Android's clipboard. Opening a shell reuses the validated directory/session creation path; it never types a path into an active program.
+
+The panel uses the saved workspace accent and standard Studio controls. Its toolbar scrolls horizontally on narrow windows. Device rendering, accessibility and performance acceptance remain separate from source checks and Android compilation.

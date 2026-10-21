@@ -13,6 +13,7 @@ This is a first native implementation, not a finished production release. The An
 - Searchable, editable command snippets with preview and explicit insertion into the selected session, without sending Enter.
 - Four persistent workspace accents: Lime, Glacier, Orchid and Amber. Terminal color/font files remain under the existing terminal settings.
 - Directory browsing and saved project paths. A selected directory starts a new shell with that working directory; paths are never inserted into shell command text.
+- Native project file browser with current-folder filename filtering, hidden-file toggle, read-only UTF-8 source previews, path copying and opening a shell in the selected folder.
 - Compact chrome when the app window has little vertical space.
 - The existing terminal renderer, input handling, shell lifecycle, extra keys, bootstrap downloader and package environment are retained.
 
@@ -51,6 +52,10 @@ For phone storage first run `termux-setup-storage` and grant its requested permi
 
 The directory breadcrumb refreshes on session/title/lifecycle events. It can lag after `cd` if the shell does not emit a title change.
 
+Choose **Project files** while browsing a directory or from a saved project to inspect its files. Folders sort before files. Filtering applies to filenames in the current folder; turn **Hidden** on to include dotfiles. Each view shows up to 200 matching entries, and filtering can find entries beyond that initial limit.
+
+Tap a file for a read-only UTF-8 preview up to 256 KiB. Binary, invalid UTF-8 and oversized files show an explanation. Long-press preview text to select/copy it. **Copy path** copies the selected folder/file path; **Open shell here** creates a normal shell in that folder, or the previewed file's parent. No file contents or paths are executed. Links outside the selected project require opening that target directory as a separate project. File previews do not edit or save files.
+
 ## Workspace tools
 
 The bottom bar opens **Search**, **Projects**, **Snippets** and **Keyboard**. The header's **Quick actions** button also exposes these tools, the session drawer, appearance and focus mode.
@@ -75,6 +80,8 @@ Hardware keyboard shortcuts follow the existing Ctrl+Alt convention and honor th
 Read [VERIFICATION.md](docs/studio/VERIFICATION.md) for actual check results, [FEATURE_MATRIX.md](docs/studio/FEATURE_MATRIX.md) for capability scope, and [IMPLEMENTATION.md](docs/studio/IMPLEMENTATION.md) for integration details.
 
 The workspace-tools universal development APK builds successfully. All 155 app/terminal-emulator unit tests and 59 SDK-independent path/search/snippet checks passed. Its signature and four ABI directories were verified. See [VERIFICATION.md](docs/studio/VERIFICATION.md) and [WORKSPACE_TOOLS_BUILD_RESULT.json](docs/studio/WORKSPACE_TOOLS_BUILD_RESULT.json) for the results. Device rendering, interactive package installs and performance benchmarks remain untested. The original foundation artifact is recorded separately in [BUILD_RESULT.json](docs/studio/BUILD_RESULT.json).
+
+The project-file browser adds 39 filesystem regression checks, bringing SDK-independent validation to 98 checks. Android build/test results for the feature are recorded by its pull request workflow. File editing remains planned.
 
 ## Origin and license
 

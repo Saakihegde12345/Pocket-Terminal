@@ -1,5 +1,17 @@
 # Verification record
 
+## Project file browser — 2026-10-22
+
+Base: merged `main` at `1f9bdb08bfa64b04e812637d2bd67aa8f000e2cb`.
+
+- Local source validation passed **98 SDK-independent checks**: 19 path checks, 40 search/snippet checks and 39 new file-browser checks.
+- New coverage includes deterministic folder-first ordering and the 200-entry cap, filtering beyond that initial cap, hidden files, Unicode/CRLF/tabs, literal shell metacharacters in filenames, UTF-8 BOM, exact/over-limit previews, malformed UTF-8, binary/control bytes, empty/missing files and directories, project path boundaries, internal/external symlinks and cancellation.
+- Java 8 syntax parsing passed for 16 integration files, along with resource XML, resource-reference and repository-import checks. `git diff --check` passed.
+- Source checks do not compile Android code. Android assembly and app/emulator unit tests run in the feature PR's existing build workflow. Physical-device UI, TalkBack, large-font, storage permission and performance acceptance remain required.
+- The development version is `0.3.0-pocket-dev`, versionCode 119; `com.termux` and the existing development signing identity remain unchanged.
+
+The preceding workspace-tools implementation also passed its post-merge Android build and unit tests on `main`: [GitHub Actions run 39671784628](https://github.com/Saakihegde12345/Pocket-Terminal/actions/runs/39671784628). Its APK and unit-test artifacts were present and not expired when checked on 2026-10-22.
+
 ## Workspace tools — 2026-10-21
 
 Base: Pocket-Terminal `4896ed88045201dbd10de79071747e7dc910dc85`, after merging dependency PRs #1–#3.
@@ -22,7 +34,7 @@ The build used `TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS=0`, `TERMUX_APP_VERSION_NAME=
 
 The first test attempt could not download Robolectric's Android runtime because the test JVM lacked this environment's network proxy. Passing the existing proxy and system CA configuration to the test JVM resolved it; the final build and every test passed. The APK contents and signature were checked afterward.
 
-See [WORKSPACE_TOOLS_BUILD_RESULT.json](WORKSPACE_TOOLS_BUILD_RESULT.json) for artifact details. This is local build/test evidence. No physical-device/emulator UI acceptance, interactive package installation or performance benchmark was performed. Remote CI for this feature update has not run yet. The foundation and dependency-update CI builds already passed before this feature work.
+See [WORKSPACE_TOOLS_BUILD_RESULT.json](WORKSPACE_TOOLS_BUILD_RESULT.json) for artifact details. This is local build/test evidence. No physical-device/emulator UI acceptance, interactive package installation or performance benchmark was performed. Remote CI for this feature update had not run at the time of the local build; its later PR and post-merge builds passed. The foundation and dependency-update CI builds already passed before this feature work.
 
 ## Foundation build — 2026-10-16 (historical)
 
