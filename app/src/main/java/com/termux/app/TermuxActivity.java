@@ -871,6 +871,22 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         if (mStudioChrome != null) mStudioChrome.refresh();
     }
 
+    public void showStudioSearch() {
+        if (mStudioChrome != null) mStudioChrome.showSearch();
+    }
+
+    public void showStudioSnippets() {
+        if (mStudioChrome != null) mStudioChrome.showSnippets();
+    }
+
+    public void showStudioAppearance() {
+        if (mStudioChrome != null) mStudioChrome.showAppearance();
+    }
+
+    public void showStudioPalette() {
+        if (mStudioChrome != null) mStudioChrome.showPalette();
+    }
+
     public boolean isVisible() {
         return mIsVisible;
     }
