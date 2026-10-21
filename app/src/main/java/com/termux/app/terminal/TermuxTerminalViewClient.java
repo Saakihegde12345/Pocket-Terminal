@@ -249,7 +249,15 @@ public class TermuxTerminalViewClient extends TermuxTerminalViewClientBase {
             // Get the unmodified code point:
             int unicodeChar = e.getUnicodeChar(0);
 
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN || unicodeChar == 'n'/* next */) {
+            if (keyCode == KeyEvent.KEYCODE_SPACE) {
+                mActivity.showStudioPalette();
+            } else if (unicodeChar == 'f') {
+                mActivity.showStudioSearch();
+            } else if (unicodeChar == 's') {
+                mActivity.showStudioSnippets();
+            } else if (unicodeChar == 'a') {
+                mActivity.showStudioAppearance();
+            } else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN || unicodeChar == 'n'/* next */) {
                 mTermuxTerminalSessionActivityClient.switchToSession(true);
             } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP || unicodeChar == 'p' /* previous */) {
                 mTermuxTerminalSessionActivityClient.switchToSession(false);
