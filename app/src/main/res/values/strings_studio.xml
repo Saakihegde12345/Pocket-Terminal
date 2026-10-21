@@ -34,4 +34,48 @@
     <string name="studio_unreadable_directory">Cannot read this directory.</string>
     <string name="studio_wait_for_shell">Wait for the initial shell to finish starting.</string>
     <string name="studio_open_projects_at">Open projects. Current directory: %1$s</string>
+    <string name="studio_search">Search</string>
+    <string name="studio_search_output">Search output</string>
+    <string name="studio_close_search">Close output search</string>
+    <string name="studio_search_hint">Find in terminal output…</string>
+    <string name="studio_previous_match">Previous match</string>
+    <string name="studio_next_match">Next match</string>
+    <string name="studio_match_case">Match case</string>
+    <string name="studio_match_case_on">Match case, on</string>
+    <string name="studio_match_case_off">Match case, off</string>
+    <string name="studio_refresh">Refresh</string>
+    <string name="studio_refresh_output">Capture latest output</string>
+    <string name="studio_snapshot_source">%1$s · OUTPUT SNAPSHOT</string>
+    <string name="studio_snapshot_limited">%1$s · RECENT OUTPUT · snapshot limit reached</string>
+    <string name="studio_snapshot_note">Read-only snapshot. Refresh to capture new output. Long-press text to copy.</string>
+    <string name="studio_search_prompt">Type to search this snapshot</string>
+    <string name="studio_searching">Searching…</string>
+    <string name="studio_no_matches">No matches in this snapshot</string>
+    <string name="studio_match_count">%1$d / %2$d%3$s matches</string>
+    <string name="studio_snippets">Snippets</string>
+    <string name="studio_find_snippet">Find a saved command…</string>
+    <string name="studio_no_snippets">No matching snippets. Add a command you use often.</string>
+    <string name="studio_new_snippet">New snippet</string>
+    <string name="studio_edit_snippet">Edit</string>
+    <string name="studio_delete_snippet">Delete snippet</string>
+    <string name="studio_delete_snippet_question">Delete “%1$s” from saved snippets?</string>
+    <string name="studio_save_snippet">Save</string>
+    <string name="studio_snippet_name">Name</string>
+    <string name="studio_snippet_command">Command (one line)</string>
+    <string name="studio_snippet_local_note">Saved on this device. Use one line without Enter, tabs or control characters.</string>
+    <string name="studio_snippet_insert_note">Insert into %1$s. Review the active prompt first. Text is pasted without Enter; the active program handles the input.</string>
+    <string name="studio_current_session">current session</string>
+    <string name="studio_insert_snippet">Insert</string>
+    <string name="studio_session_changed">The session changed or exited. Open the snippet preview again.</string>
+    <string name="studio_invalid_snippet_name">Enter a name of 1–60 characters without control characters.</string>
+    <string name="studio_invalid_snippet_command">Use one nonempty line, up to 4096 characters, without tabs or control characters.</string>
+    <string name="studio_snippet_limit">You can save up to 50 snippets. Edit or delete an existing entry first.</string>
+    <string name="studio_appearance">Workspace accent</string>
+    <string name="studio_apply_appearance">Apply</string>
+    <string-array name="studio_accents">
+        <item>Lime · original</item>
+        <item>Glacier · blue</item>
+        <item>Orchid · violet</item>
+        <item>Amber · warm</item>
+    </string-array>
 </resources>
