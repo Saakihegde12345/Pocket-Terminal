@@ -14,6 +14,7 @@ import com.termux.app.TermuxActivity;
 import com.termux.app.TermuxService;
 import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
 import com.termux.shared.termux.TermuxConstants;
+import com.termux.terminal.TerminalSession;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +32,8 @@ final class StudioProjectPicker {
     private static final String SAVED_PATHS = "project_directories_v1";
     private static final int MAX_SAVED = 30;
     private static final int MAX_VISIBLE_DIRECTORIES = 200;
+    private static final long CWD_CHECK_DELAY_MS = 100L;
+    private static final int MAX_CWD_CHECKS = 10;
 
     private final TermuxActivity activity;
     private final SharedPreferences preferences;
@@ -179,26 +182,65 @@ final class StudioProjectPicker {
         }).setNegativeButton(android.R.string.cancel, null).create());
     }
 
-    private void open(File directory) {
+    private void open(File requestedDirectory) {
+        final File directory;
+        try {
+            // Revalidate after browsing: a directory can disappear before the user taps Open.
+            directory = WorkspacePaths.resolveDirectory(requestedDirectory.getPath(), home);
+        } catch (IOException | SecurityException e) {
+            activity.showToast(e.getMessage(), true);
+            return;
+        }
         TermuxService service = activity.getTermuxService();
         // Require the normal bootstrap-created session before opening a project session.
         if (service == null || activity.getCurrentSession() == null || service.wantsToStop()) {
             activity.showToast(activity.getString(R.string.studio_wait_for_shell), true);
             return;
         }
+        final int request = ++generation;
         int before = service.getTermuxSessionsSize();
         activity.getTermuxTerminalSessionClient().addNewSessionInDirectory(false, directory.getName(), directory.getPath());
         if (service.getTermuxSessionsSize() <= before) return;
-        if (activity.getCurrentSession() == null) return;
-        // Store only after a session was actually created in this directory.
-        TermuxSession selected = service.getTermuxSessionForTerminalSession(activity.getCurrentSession());
-        if (selected == null || !directory.getPath().equals(selected.getExecutionCommand().workingDirectory)) return;
+        TerminalSession terminalSession = activity.getCurrentSession();
+        if (terminalSession == null) return;
+        // Keep the normal new-session flow immediate; bookmark persistence waits for the shell's actual cwd.
+        activity.getTerminalView().requestFocus();
+        TermuxSession selected = service.getTermuxSessionForTerminalSession(terminalSession);
+        if (selected == null) return;
+        activity.getTerminalView().postDelayed(() ->
+            verifyActualCwd(directory, terminalSession, selected, request, 0), CWD_CHECK_DELAY_MS);
+    }
+
+    private void verifyActualCwd(File directory, TerminalSession terminalSession, TermuxSession selected,
+                                 int request, int check) {
+        TermuxService service = activity.getTermuxService();
+        if (closed || request != generation || service == null || service.wantsToStop()
+            || activity.isFinishing() || activity.isDestroyed()
+            || activity.getCurrentSession() != terminalSession
+            || service.getTermuxSessionForTerminalSession(terminalSession) != selected
+            || !terminalSession.isRunning()) return;
+
+        if (directory.getPath().equals(terminalSession.getCwd())) {
+            saveBookmark(directory);
+            return;
+        }
+        if (check + 1 < MAX_CWD_CHECKS) {
+            activity.getTerminalView().postDelayed(() ->
+                verifyActualCwd(directory, terminalSession, selected, request, check + 1), CWD_CHECK_DELAY_MS);
+        } else if (!directory.isDirectory()) {
+            // If the requested directory vanished during startup, do not leave a shell in an
+            // inherited directory that looks like a successful project open.
+            terminalSession.finishIfRunning();
+            activity.showToast(activity.getString(R.string.studio_unreadable_directory), true);
+        }
+    }
+
+    private void saveBookmark(File directory) {
         Set<String> paths = new HashSet<>(preferences.getStringSet(SAVED_PATHS, new HashSet<>()));
         if (paths.size() < MAX_SAVED || paths.contains(directory.getPath())) {
             paths.add(directory.getPath());
             preferences.edit().putStringSet(SAVED_PATHS, paths).apply();
         }
-        activity.getTerminalView().requestFocus();
     }
 
     void close() {
@@ -209,4 +251,7 @@ final class StudioProjectPicker {
         dialog = null;
         io.shutdownNow();
     }
+
+    Object retainDraft() { return files.retainDraft(); }
+    void restoreDraft(Object draft) { files.restoreDraft(draft); }
 }

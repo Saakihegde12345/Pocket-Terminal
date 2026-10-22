@@ -10,6 +10,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,7 +54,12 @@ public final class WorkspaceFiles {
         public final File file;
         public final String text;
         public final int bytes;
-        Preview(File file, String text, int bytes) { this.file = file; this.text = text; this.bytes = bytes; }
+        public final boolean bom;
+        private final byte[] fingerprint;
+        Preview(File file, String text, byte[] data, boolean bom) {
+            this.file = file; this.text = text; this.bytes = data.length; this.bom = bom;
+            fingerprint = digest(data);
+        }
     }
 
     /** Resolve links before checking a path boundary; sibling names are not descendants. */
@@ -119,13 +127,41 @@ public final class WorkspaceFiles {
         } catch (CharacterCodingException e) {
             throw new IOException("Preview supports UTF-8 text. This file uses another encoding or contains binary data.");
         }
-        if (text.startsWith("\uFEFF")) text = text.substring(1);
+        boolean bom = text.startsWith("\uFEFF");
+        if (bom) text = text.substring(1);
         for (int i = 0; i < text.length(); i++) {
             if ((i & 4095) == 0) checkCancelled();
             char c = text.charAt(i);
             if ((c < 32 && c != '\n' && c != '\r' && c != '\t') || (c >= 127 && c <= 159))
                 throw new IOException("This file contains binary or control data and cannot be previewed.");
         }
-        return new Preview(file, text, data.length);
+        return new Preview(file, text, data, bom);
+    }
+
+    /** Recheck the original bytes, including BOM, before replacing an edited file. */
+    public static byte[] prepareSave(File root, Preview original, String text) throws IOException {
+        checkCancelled();
+        Preview current = preview(root, original.file);
+        if (!Arrays.equals(current.fingerprint, original.fingerprint))
+            throw new IOException("The file changed on disk. Reload it before saving your edits.");
+        byte[] data;
+        try {
+            ByteBuffer encoded = StandardCharsets.UTF_8.newEncoder().onMalformedInput(CodingErrorAction.REPORT)
+                .encode(java.nio.CharBuffer.wrap((original.bom ? "\uFEFF" : "") + text));
+            data = new byte[encoded.remaining()];
+            encoded.get(data);
+        } catch (CharacterCodingException e) { throw new IOException("Text contains an incomplete Unicode character."); }
+        if (data.length > MAX_PREVIEW_BYTES) throw new IOException("Editing supports UTF-8 files up to 256 KiB.");
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if ((c < 32 && c != '\n' && c != '\r' && c != '\t') || (c >= 127 && c <= 159))
+                throw new IOException("Remove binary or control characters before saving.");
+        }
+        return data;
+    }
+
+    private static byte[] digest(byte[] data) {
+        try { return MessageDigest.getInstance("SHA-256").digest(data); }
+        catch (NoSuchAlgorithmException impossible) { throw new AssertionError(impossible); }
     }
 }

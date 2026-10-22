@@ -43,7 +43,7 @@ import com.termux.terminal.TerminalSession;
 import com.termux.view.textselection.TextSelectionCursorController;
 
 /** View displaying and interacting with a {@link TerminalSession}. */
-public final class TerminalView extends View {
+public class TerminalView extends View {
 
     /** Log terminal view key and IME events. */
     private static boolean TERMINAL_VIEW_KEY_LOGGING_ENABLED = false;
@@ -522,6 +522,8 @@ public final class TerminalView extends View {
         updateSize();
         invalidate();
     }
+
+    public Typeface getTypeface() { return mRenderer.mTypeface; }
 
     @Override
     public boolean onCheckIsTextEditor() {

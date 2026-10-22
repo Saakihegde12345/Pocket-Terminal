@@ -43,8 +43,8 @@ android {
     defaultConfig {
         minSdkVersion project.properties.minSdkVersion.toInteger()
         targetSdkVersion project.properties.targetSdkVersion.toInteger()
-        versionCode 119
-        versionName "0.3.0-pocket-dev"
+        versionCode 120
+        versionName "0.4.0-pocket-dev"
 
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
@@ -194,6 +194,8 @@ def downloadBootstrap(String arch, String expectedChecksum, String version) {
     def out = new BufferedOutputStream(new FileOutputStream(file))
 
     def connection = new URL(remoteUrl).openConnection()
+    connection.setConnectTimeout(30000)
+    connection.setReadTimeout(120000)
     connection.setInstanceFollowRedirects(true)
     def digestStream = new java.security.DigestInputStream(connection.inputStream, digest)
     out << digestStream

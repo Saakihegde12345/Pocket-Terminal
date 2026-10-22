@@ -4,6 +4,7 @@ package com.termux.app.studio;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
+import android.os.SystemClock;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -31,11 +32,19 @@ import java.util.Locale;
 
 /** Native workspace chrome around the unmodified terminal view, IME and PTY pipeline. */
 public final class StudioChrome {
+    private static final long REFRESH_DEBOUNCE_MS = 150L;
+    private static final long REFRESH_MAX_DELAY_MS = 1000L;
+
     private final TermuxActivity activity;
     private final SharedPreferences preferences;
     private final StudioProjectPicker projects;
     private final StudioOutputSearch outputSearch;
     private final StudioSnippets snippets;
+    private final StudioHosts hosts;
+    private final StudioPackages packages;
+    private final StudioPanes panes;
+    private final StudioThemes themes;
+    private final StudioWorkspace workspace;
     private final LinearLayout root;
     private final LinearLayout header;
     private final TextView directory;
@@ -47,6 +56,7 @@ public final class StudioChrome {
     private boolean compact;
     private boolean disposed;
     private boolean refreshQueued;
+    private long refreshFirstQueuedAt;
     private String sessionFingerprint = "";
     private AlertDialog palette;
     private AlertDialog appearance;
@@ -55,6 +65,7 @@ public final class StudioChrome {
 
     private void runRefresh() {
         refreshQueued = false;
+        refreshFirstQueuedAt = 0L;
         if (!disposed && !activity.isFinishing() && !activity.isDestroyed()) refreshNow();
     }
 
@@ -74,6 +85,11 @@ public final class StudioChrome {
         projects = new StudioProjectPicker(activity, preferences);
         outputSearch = new StudioOutputSearch(activity);
         snippets = new StudioSnippets(activity, preferences);
+        hosts = new StudioHosts(activity, preferences);
+        packages = new StudioPackages(activity);
+        panes = new StudioPanes(activity, preferences);
+        themes = new StudioThemes(activity);
+        workspace = new StudioWorkspace(activity, preferences);
         focusMode = preferences.getBoolean("focus_mode", false);
         root = activity.findViewById(R.id.activity_termux_root_view);
 
@@ -178,14 +194,22 @@ public final class StudioChrome {
         }
     }
 
-    /** Event-driven and frame-coalesced. Terminal byte output does not rebuild app chrome. */
+    /** Coalesce terminal output while bounding the delay before the cwd is displayed. */
     public void refresh() {
-        if (disposed || refreshQueued) return;
-        refreshQueued = true;
-        root.postOnAnimation(refreshTask);
+        if (disposed) return;
+        long now = SystemClock.uptimeMillis();
+        if (!refreshQueued) {
+            refreshQueued = true;
+            refreshFirstQueuedAt = now;
+        }
+        long elapsed = now - refreshFirstQueuedAt;
+        long delay = Math.min(REFRESH_DEBOUNCE_MS, Math.max(0L, REFRESH_MAX_DELAY_MS - elapsed));
+        root.removeCallbacks(refreshTask);
+        root.postDelayed(refreshTask, delay);
     }
 
     private void refreshNow() {
+        panes.refresh();
         TermuxService service = activity.getTermuxService();
         TerminalSession current = activity.getCurrentSession();
         subtitle.setText(service == null || current == null ? activity.getString(R.string.studio_preparing)
@@ -279,6 +303,11 @@ public final class StudioChrome {
             all.add(action(R.string.studio_rename_shell, () -> activity.getTermuxTerminalSessionClient().renameSession(activity.getCurrentSession())));
         }
         all.add(action(R.string.studio_snippets, this::showSnippets));
+        all.add(action(R.string.studio_panes, panes::showOptions));
+        all.add(action(R.string.studio_hosts, hosts::showHosts));
+        all.add(action(R.string.studio_packages, packages::showCatalog));
+        all.add(action(R.string.studio_terminal_theme, themes::showEditor));
+        all.add(action(R.string.studio_workspace, workspace::showOptions));
         all.add(action(R.string.studio_appearance, this::showAppearance));
         all.add(action(R.string.studio_sessions, () -> activity.getDrawer().openDrawer(Gravity.LEFT)));
         all.add(action(R.string.studio_projects, projects::showProjects));
@@ -336,6 +365,17 @@ public final class StudioChrome {
 
     public void showSnippets() { if (!disposed) snippets.showLibrary(); }
 
+    public void selectSession(TerminalSession session) { if (!disposed) panes.select(session); }
+
+    public com.termux.view.TerminalView[] terminalViews() { return panes.views(); }
+
+    public boolean onActivityResult(int request, int result, android.content.Intent data) {
+        return workspace.onActivityResult(request, result, data);
+    }
+
+    public Object retainEditorDraft() { panes.remember(); return projects.retainDraft(); }
+    public void restoreEditorDraft(Object draft) { projects.restoreDraft(draft); }
+
     public void showAppearance() {
         if (disposed) return;
         if (appearance != null) appearance.dismiss();
@@ -368,6 +408,8 @@ public final class StudioChrome {
     public void close() {
         disposed = true;
         root.removeCallbacks(refreshTask);
+        refreshQueued = false;
+        refreshFirstQueuedAt = 0L;
         root.removeOnLayoutChangeListener(sizeListener);
         if (palette != null) palette.dismiss();
         palette = null;
@@ -375,6 +417,11 @@ public final class StudioChrome {
         appearance = null;
         outputSearch.close();
         snippets.close();
+        hosts.close();
+        packages.close();
+        panes.close();
+        themes.close();
+        workspace.close();
         projects.close();
     }
 }

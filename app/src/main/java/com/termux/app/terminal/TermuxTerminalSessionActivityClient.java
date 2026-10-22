@@ -118,7 +118,11 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     public void onTextChanged(@NonNull TerminalSession changedSession) {
         if (!mActivity.isVisible()) return;
 
-        if (mActivity.getCurrentSession() == changedSession) mActivity.getTerminalView().onScreenUpdated();
+        for (com.termux.view.TerminalView view : mActivity.getStudioTerminalViews())
+            if (view.getCurrentSession() == changedSession) view.onScreenUpdated();
+        if (mActivity.getCurrentSession() == changedSession) {
+            mActivity.refreshStudioChrome();
+        }
     }
 
     @Override
@@ -292,6 +296,8 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
     /** Try switching to session. */
     public void setCurrentSession(TerminalSession session) {
         if (session == null) return;
+
+        mActivity.selectStudioSession(session);
 
         if (mActivity.getTerminalView().attachSession(session)) {
             // notify about switched session if not already displaying the session
@@ -512,14 +518,18 @@ public class TermuxTerminalSessionActivityClient extends TermuxTerminalSessionCl
             }
 
             TerminalColors.COLOR_SCHEME.updateWith(props);
-            TerminalSession session = mActivity.getCurrentSession();
-            if (session != null && session.getEmulator() != null) {
-                session.getEmulator().mColors.reset();
+            TermuxService service = mActivity.getTermuxService();
+            if (service != null) for (TermuxSession entry : service.getTermuxSessions()) {
+                TerminalSession session = entry.getTerminalSession();
+                if (session != null && session.getEmulator() != null) session.getEmulator().mColors.reset();
             }
             updateBackgroundColor();
 
             final Typeface newTypeface = (fontFile.exists() && fontFile.length() > 0) ? Typeface.createFromFile(fontFile) : Typeface.MONOSPACE;
-            mActivity.getTerminalView().setTypeface(newTypeface);
+            for (com.termux.view.TerminalView view : mActivity.getStudioTerminalViews()) {
+                view.setTypeface(newTypeface);
+                view.onScreenUpdated();
+            }
         } catch (Exception e) {
             Logger.logStackTraceWithMessage(LOG_TAG, "Error in checkForFontAndColors()", e);
         }

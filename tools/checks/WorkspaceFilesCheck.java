@@ -50,6 +50,19 @@ public final class WorkspaceFilesCheck {
             File bom = write(project, "bom.txt", "\uFEFFhello".getBytes(StandardCharsets.UTF_8));
             check(WorkspaceFiles.preview(root, bom).text.equals("hello"), "UTF-8 BOM handled");
             check(new String(Files.readAllBytes(bom.toPath()), StandardCharsets.UTF_8).equals("\uFEFFhello"), "Preview does not modify the source");
+            WorkspaceFiles.Preview original = WorkspaceFiles.preview(root, code);
+            check(new String(WorkspaceFiles.prepareSave(root, original, content + "edited\n"), StandardCharsets.UTF_8)
+                .equals(content + "edited\n"), "Editor preserves Unicode, CRLF and literal shell syntax");
+            check(new String(WorkspaceFiles.prepareSave(root, WorkspaceFiles.preview(root, bom), "changed"), StandardCharsets.UTF_8)
+                .equals("\uFEFFchanged"), "Editor preserves the UTF-8 BOM");
+            rejects(() -> WorkspaceFiles.prepareSave(root, original, "bad\u0000data"), "Editor rejects binary control data");
+            rejects(() -> WorkspaceFiles.prepareSave(root, original, "bad\ud800"), "Editor rejects malformed UTF-16");
+            StringBuilder oversized = new StringBuilder();
+            for (int i = 0; i < WorkspaceFiles.MAX_PREVIEW_BYTES; i++) oversized.append('é');
+            rejects(() -> WorkspaceFiles.prepareSave(root, original, oversized.toString()), "Editor limit counts encoded UTF-8 bytes");
+            Files.write(code.toPath(), "external changes".getBytes(StandardCharsets.UTF_8));
+            rejects(() -> WorkspaceFiles.prepareSave(root, original, "overwrite"), "External edits cannot be overwritten silently");
+            Files.write(code.toPath(), content.getBytes(StandardCharsets.UTF_8));
             File badUtf8 = write(project, "bad.bin", new byte[]{(byte) 0xc3, 0x28});
             rejects(() -> WorkspaceFiles.preview(root, badUtf8), "Malformed UTF-8 rejected, not replaced");
             File binary = write(project, "nul.bin", new byte[]{'a', 0, 'b'});

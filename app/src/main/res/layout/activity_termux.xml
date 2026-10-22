@@ -23,7 +23,12 @@
             android:layout_above="@+id/terminal_toolbar_view_pager"
             android:layout_height="match_parent">
 
-            <com.termux.view.TerminalView
+            <LinearLayout
+                android:id="@+id/studio_terminal_panes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+            <com.termux.app.studio.StudioTerminalView
                 android:id="@+id/terminal_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -32,6 +37,7 @@
                 android:scrollbarThumbVertical="@drawable/terminal_scroll_shape"
                 android:scrollbars="vertical"
                 tools:ignore="UnusedAttribute" />
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/left_drawer"

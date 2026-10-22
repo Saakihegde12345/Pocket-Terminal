@@ -1,8 +1,8 @@
-# Pocket-Terminal — native Android foundation
+# Pocket-Terminal
 
 An open-source Android terminal fork with a charcoal-and-lime workspace interface around Termux's existing terminal emulator, shell service and package runtime. **Project name: Pocket-Terminal.**
 
-This is a first native implementation, not a finished production release. The Android UI attaches to real sessions; the Android app contains no simulated command output.
+This is a development build of a native terminal workspace. The Android UI attaches to real sessions; the Android app contains no simulated command output. Public distribution still requires the independent runtime identity and device acceptance work described below.
 
 ## Implemented
 
@@ -14,6 +14,12 @@ This is a first native implementation, not a finished production release. The An
 - Four persistent workspace accents: Lime, Glacier, Orchid and Amber. Terminal color/font files remain under the existing terminal settings.
 - Directory browsing and saved project paths. A selected directory starts a new shell with that working directory; paths are never inserted into shell command text.
 - Native project file browser with current-folder filename filtering, hidden-file toggle, read-only UTF-8 source previews, path copying and opening a shell in the selected folder.
+- UTF-8 file editing with explicit saves, external-change detection, atomic replacement, preserved permissions/BOM and unsaved drafts retained across Activity recreation.
+- Two native terminal panes, stacked or side by side, with independent sessions and input routed to the selected pane.
+- Saved SSH/SFTP hosts with explicit connection confirmation, using OpenSSH for authentication and host verification.
+- Searchable local APT package catalog with installation, updates, upgrades and removal through interactive package-tool sessions.
+- Terminal theme editor for background, foreground, cursor and all 16 ANSI colors, including three editable presets.
+- Versioned workspace export/import through Android document pickers, with validated metadata, undo of the last import and explicit restoration of shell directories.
 - Compact chrome when the app window has little vertical space.
 - The existing terminal renderer, input handling, shell lifecycle, extra keys, bootstrap downloader and package environment are retained.
 
@@ -27,16 +33,52 @@ An independent public release needs a separate ID, release key, rebuilt bootstra
 
 The source uses Java 17, Gradle 9.2.1, Android compile SDK 36 and NDK 29.0.14206865. Use the default `apt-android-7` package variant. The inherited target SDK remains 28; this is not a Google Play release configuration.
 
-Open the project in Android Studio, install the SDK/NDK versions above, and run from the root with dependency-download access:
+Open the project in Android Studio, install the SDK/NDK versions above, and run from the root with dependency-download access.
+
+### Source-only checks
+
+This command checks path handling, Java syntax, resources and repository imports; it does not compile Android code or assemble an APK:
 
 ```bash
 python3 tools/check_source.py
-./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :terminal-emulator:testDebugUnitTest
 ```
 
-On Windows use `gradlew.bat`. Source checks require Python 3 and a JDK containing `jdk.compiler`.
+Source checks require Python 3 and a JDK containing `jdk.compiler`.
 
-Development APKs are written under `app/build/outputs/apk/debug/`. **No prebuilt APK is included.**
+### CI-equivalent debug build
+
+Set the same four environment variables as `.github/workflows/pocket-terminal-build.yml` before running Gradle. They select the `apt-android-7` bootstrap, disable debug ABI splits so the output is one universal APK, set the development version, and set the CI artifact filename tag:
+
+```text
+TERMUX_PACKAGE_VARIANT=apt-android-7
+TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS=0
+TERMUX_APP_VERSION_NAME=0.4.0-pocket-dev
+TERMUX_APK_VERSION_TAG=pocket-terminal-dev
+```
+
+On a POSIX shell:
+
+```bash
+export TERMUX_PACKAGE_VARIANT=apt-android-7
+export TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS=0
+export TERMUX_APP_VERSION_NAME=0.4.0-pocket-dev
+export TERMUX_APK_VERSION_TAG=pocket-terminal-dev
+unset JITPACK_NDK_VERSION
+./gradlew --no-daemon --max-workers=2 :app:assembleDebug :app:testDebugUnitTest :terminal-emulator:testDebugUnitTest
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:TERMUX_PACKAGE_VARIANT = "apt-android-7"
+$env:TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS = "0"
+$env:TERMUX_APP_VERSION_NAME = "0.4.0-pocket-dev"
+$env:TERMUX_APK_VERSION_TAG = "pocket-terminal-dev"
+Remove-Item Env:JITPACK_NDK_VERSION -ErrorAction SilentlyContinue
+.\gradlew.bat --no-daemon --max-workers=2 :app:assembleDebug :app:testDebugUnitTest :terminal-emulator:testDebugUnitTest
+```
+
+`JITPACK_NDK_VERSION` is an optional upstream Gradle override; CI does not set it, so leave it unset to use `gradle.properties`. The matching artifact is `app/build/outputs/apk/debug/Pocket-Terminal_pocket-terminal-dev_universal.apk`. **No prebuilt APK is included.**
 
 The **Pocket-Terminal development APK** workflow runs on pushes and pull requests to `main`. It can also be started from **Actions → Pocket-Terminal development APK → Run workflow**. Download its artifact after the job succeeds. The workflow uses the standard GitHub-hosted runner's Android SDK and downloads missing components.
 
@@ -50,11 +92,11 @@ Open **Projects → Browse home directory** or **Enter directory path**, choose 
 
 For phone storage first run `termux-setup-storage` and grant its requested permission. Enter your actual folder path, for example `/storage/emulated/0/Projects`; names are case-sensitive. The picker accepts filesystem paths, not `content://` URIs. Keep executables needing Unix permissions in app-private storage.
 
-The directory breadcrumb refreshes on session/title/lifecycle events. It can lag after `cd` if the shell does not emit a title change.
+The directory breadcrumb refreshes on session/title/lifecycle events and on debounced output from the active shell. It may lag briefly during sustained output, but tab views are not rebuilt for every byte.
 
 Choose **Project files** while browsing a directory or from a saved project to inspect its files. Folders sort before files. Filtering applies to filenames in the current folder; turn **Hidden** on to include dotfiles. Each view shows up to 200 matching entries, and filtering can find entries beyond that initial limit.
 
-Tap a file for a read-only UTF-8 preview up to 256 KiB. Binary, invalid UTF-8 and oversized files show an explanation. Long-press preview text to select/copy it. **Copy path** copies the selected folder/file path; **Open shell here** creates a normal shell in that folder, or the previewed file's parent. No file contents or paths are executed. Links outside the selected project require opening that target directory as a separate project. File previews do not edit or save files.
+Tap a file for a read-only UTF-8 preview up to 256 KiB. Binary, invalid UTF-8 and oversized files show an explanation. Long-press preview text to select/copy it. Choose **Edit** to change an existing text file, then **Save** to write it. Saving rechecks the original bytes and refuses to overwrite external edits; it atomically replaces the file while retaining permissions and its UTF-8 BOM. Unsaved drafts survive Activity recreation, including rotation; process-death recovery is not provided. **Copy path** copies the selected folder/file path; **Open shell here** creates a normal shell in that folder, or the previewed file's parent. Links outside the selected project require opening that target directory as a separate project.
 
 ## Workspace tools
 
@@ -75,13 +117,27 @@ Hardware keyboard shortcuts follow the existing Ctrl+Alt convention and honor th
 | Ctrl+Alt+S | Snippets |
 | Ctrl+Alt+A | Workspace accent |
 
+## Panes, hosts and packages
+
+Open **Quick actions → Terminal panes** for top/bottom or side-by-side panes. Select a pane by touching its terminal or its labeled header; tabs, extra keys, clipboard insertion and hardware input follow that selection. Choosing an already visible session selects its pane. The initial split reuses another session or creates one new shell; restoring the UI reuses existing sessions. Closing a pane keeps its process running in the session list.
+
+**Quick actions → Saved hosts** creates, edits and deletes up to 50 SSH/SFTP endpoints. Save a name, hostname/IP address, username and port. Connect opens an explicitly confirmed session using `ssh` or `sftp`; install `openssh` first. Passwords, private keys and host verification remain in OpenSSH. Host strings are passed as arguments rather than shell text.
+
+**Quick actions → Package catalog** searches the on-device APT index. If it is empty, choose **Update index**. Selecting a package offers installation/update or confirmed removal. **Upgrade all** opens a normal interactive package session. Review the proposed changes there; the app does not send automatic confirmation. Package operations use the configured signed repositories.
+
+## Themes and workspace files
+
+**Quick actions → Terminal theme editor** edits all 19 default/ANSI color fields using `#RRGGBB`, with Pocket dark, Midnight and Paper presets. Apply writes `~/.termux/colors.properties` and refreshes the live terminal sessions. Workspace accents remain independently selectable.
+
+**Quick actions → Workspace export / import** saves JSON through Android’s document picker. Exports contain saved projects, command snippets, host endpoints, font size, focus mode, pane orientation and shell directory/name metadata. They do not contain passwords, keys, running processes, terminal output or project files. Treat exported command snippets and host names as private information. Import validates the schema and limits before asking to replace preferences, and **Undo last import** restores the previous metadata. **Restore saved shell layout** explicitly opens fresh shells in the saved directories, subject to the eight-session limit; it does not rerun commands or reconnect hosts. Terminal theme files stay separate.
+
 ## Validation and next work
 
 Read [VERIFICATION.md](docs/studio/VERIFICATION.md) for actual check results, [FEATURE_MATRIX.md](docs/studio/FEATURE_MATRIX.md) for capability scope, and [IMPLEMENTATION.md](docs/studio/IMPLEMENTATION.md) for integration details.
 
-The workspace-tools universal development APK builds successfully. All 155 app/terminal-emulator unit tests and 59 SDK-independent path/search/snippet checks passed. Its signature and four ABI directories were verified. See [VERIFICATION.md](docs/studio/VERIFICATION.md) and [WORKSPACE_TOOLS_BUILD_RESULT.json](docs/studio/WORKSPACE_TOOLS_BUILD_RESULT.json) for the results. Device rendering, interactive package installs and performance benchmarks remain untested. The original foundation artifact is recorded separately in [BUILD_RESULT.json](docs/studio/BUILD_RESULT.json).
+The `0.4.0-pocket-dev` universal APK builds successfully for all four ABIs. All **167 unit tests** and **149 SDK-independent assertions** passed. Its v1/v2 signature, package metadata and ABI contents were verified. A fresh Android 9 x86-64 emulator passed installation/bootstrap and smoke checks for panes, selected input, file editing, host persistence, package search, terminal themes and workspace export/import. Pane selection and unsaved file drafts survived Activity recreation.
 
-The project-file browser adds 39 filesystem regression checks, bringing SDK-independent validation to 98 checks. Android build/test results for the feature are recorded by its pull request workflow. File editing remains planned.
+Physical-device, multi-vendor, TalkBack and performance acceptance remain unperformed. Live SSH/SFTP connections and interactive package changes were not part of these smoke checks. See [VERIFICATION.md](docs/studio/VERIFICATION.md) and [COMPLETION_BUILD_RESULT.json](docs/studio/COMPLETION_BUILD_RESULT.json) for exact evidence and limits. Earlier records remain in [WORKSPACE_TOOLS_BUILD_RESULT.json](docs/studio/WORKSPACE_TOOLS_BUILD_RESULT.json) and [BUILD_RESULT.json](docs/studio/BUILD_RESULT.json).
 
 ## Origin and license
 

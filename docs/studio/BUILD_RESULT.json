@@ -30,7 +30,11 @@
       "skipped": 0
     }
   },
-  "workspace_path_checks": 19,
+  "workspace_path_checks": {
+    "required": 18,
+    "passed": 18,
+    "skipped": 1
+  },
   "physical_device_tested": false,
   "github_workflow_run": false
 }

@@ -93,6 +93,18 @@
     <string name="studio_file_bytes">Read-only UTF-8 preview · %1$d bytes</string>
     <string name="studio_file_folder_label">Folder: %1$s</string>
     <string name="studio_file_preview_label">Preview file: %1$s</string>
-    <string name="studio_files_note">Read-only · 200 entries per view · UTF-8 previews up to 256 KiB. Long-press text to copy.</string>
+    <string name="studio_files_note">200 entries per view · UTF-8 files up to 256 KiB. Choose Edit to change a file and Save to write it.</string>
     <string name="studio_files_unreadable">Unable to read this folder or file.</string>
+    <string name="studio_edit_file">Edit text file</string>
+    <string name="studio_discard_edits">Discard edits</string>
+    <string name="studio_discard_edits_question">Close this editor and discard unsaved changes?</string>
+    <string name="studio_hosts">Saved hosts</string>
+    <string name="studio_new_host">New SSH / SFTP host</string>
+    <string name="studio_packages">Package catalog</string>
+    <string name="studio_find_package">Find a package…</string>
+    <string name="studio_panes">Terminal panes</string>
+    <string name="studio_terminal_theme">Terminal theme editor</string>
+    <string name="studio_color_hex">#RRGGBB</string>
+    <string name="studio_theme_note">Edit the foreground, background, cursor and all 16 ANSI colors. Apply replaces your terminal color scheme; workspace accents stay separate.</string>
+    <string name="studio_workspace">Workspace export / import</string>
 </resources>

@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.text.TextUtils;
@@ -75,6 +76,28 @@ final class StudioUi {
             TextView view = dialog.getButton(button);
             if (view != null) view.setTextColor(accent(context));
         }
+    }
+
+    /** Keep dialog actions reachable when an IME or a small window reduces the visible frame. */
+    static void fitDialogContent(Context context, AlertDialog dialog, View content, int maximumDp, int overheadDp) {
+        if (dialog.getWindow() == null) return;
+        dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        View decor = dialog.getWindow().getDecorView();
+        android.view.ViewTreeObserver.OnGlobalLayoutListener listener = () -> {
+            Rect frame = new Rect(); decor.getWindowVisibleDisplayFrame(frame);
+            int height = Math.max(dp(context, 48), Math.min(dp(context, maximumDp), frame.height() - dp(context, overheadDp)));
+            android.view.ViewGroup.LayoutParams params = content.getLayoutParams();
+            if (params != null && params.height != height) { params.height = height; content.setLayoutParams(params); }
+        };
+        decor.getViewTreeObserver().addOnGlobalLayoutListener(listener);
+        content.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            public void onViewAttachedToWindow(View view) { }
+            public void onViewDetachedFromWindow(View view) {
+                if (decor.getViewTreeObserver().isAlive()) decor.getViewTreeObserver().removeOnGlobalLayoutListener(listener);
+                content.removeOnAttachStateChangeListener(this);
+            }
+        });
+        listener.onGlobalLayout();
     }
 
     static int dp(Context context, float value) {

@@ -14,7 +14,7 @@ The command library formerly resolved from JitPack is a local source module pinn
 
 Session tabs call the existing `setCurrentSession`. The added `addNewSessionInDirectory` overload passes an explicit directory into the same session-creation path. The original method delegates with no override, preserving its previous directory-selection behavior.
 
-Chrome refreshes on activity start, session selection and session-list/title events. Updates are coalesced into one pending frame callback. High-volume terminal text-change callbacks do not rebuild tabs. The directory breadcrumb therefore can lag when a shell changes directory without changing its title.
+Chrome refreshes on activity start, session selection, session-list/title events and debounced output from the active shell. Updates are coalesced and bounded so high-volume terminal text-change callbacks do not rebuild tabs for every byte. The directory breadcrumb may lag briefly during sustained output.
 
 `StudioProjectPicker` resolves/lists directories on one worker. Cancellation generations discard late results. The worker and dialogs are cleaned up when the activity is destroyed. Saved paths remain local app metadata.
 
@@ -40,7 +40,7 @@ Focus mode hides secondary chrome while leaving the header/logo as a way back. C
 2. Validate bootstrap, session behavior, terminal compatibility, IME and accessibility on fresh emulators and physical devices.
 3. Profile this fork against the same upstream commit on the same device. Record measured memory, idle CPU, frame pacing and output throughput.
 4. Establish independent identity and package infrastructure using `RUNTIME_IDENTITY.md`.
-5. Implement native split panes, full file browsing/editing, host profiles, package catalog, theme editing and exportable layouts as separate changes.
+5. Validate native split panes, file editing, host profiles, package catalog, theme editing and exportable layouts on supported devices.
 6. Validate signing, updates, backup/restore and repository trust before release.
 
 Use tmux for panes in this foundation. CLI packages remain responsible for SSH, development tools and distribution management; native management screens are future work.
@@ -59,6 +59,20 @@ Use tmux for panes in this foundation. CLI packages remain responsible for SSH, 
 
 `StudioFileBrowser` is owned and closed by `StudioProjectPicker`. A selected project or browsed directory becomes the browser root. `WorkspaceFiles` resolves canonical paths, enforces that root boundary, lists folders before files and keeps at most 200 sorted entries. Filename filtering occurs before the visible-entry cap. Hidden files are opt-in for each panel. Directory enumeration still uses Android-compatible `File.list()`, which enumerates the directory before selecting visible entries.
 
-File and directory I/O runs on a single worker; cancellation and generation checks discard results after navigation, query changes, dialog dismissal or Activity destruction. Preview reads enforce a 256 KiB cap both before and during reading, reject malformed UTF-8 and binary/control data, and publish only a detached string to the UI. Text is selectable, read-only and never rendered as HTML or executed. There are no file-write or network operations. The explicit copy action places only the selected path on Android's clipboard. Opening a shell reuses the validated directory/session creation path; it never types a path into an active program.
+File and directory I/O runs on a single worker; cancellation and generation checks discard results after navigation, query changes, dialog dismissal or Activity destruction. Preview reads enforce a 256 KiB cap both before and during reading, reject malformed UTF-8 and binary/control data, and publish only a detached string to the UI. Preview text is selectable and read-only. The explicit copy action places only the selected path on Android's clipboard. Opening a shell reuses the validated directory/session creation path; it never types a path into an active program.
 
 The panel uses the saved workspace accent and standard Studio controls. Its toolbar scrolls horizontally on narrow windows. Device rendering, accessibility and performance acceptance remain separate from source checks and Android compilation.
+
+## Completed workspace features
+
+`StudioFileEditor` edits an existing preview. `WorkspaceFiles.prepareSave` validates encoded UTF-8 length and compares a SHA-256 snapshot of the original raw bytes, including its BOM. The worker writes and syncs a same-directory temporary file, preserves its POSIX mode with `Os.chmod`, rechecks the original and replaces it using `Os.rename`. Errors retain the original file and the edit buffer. A final external write between the last comparison and rename cannot be excluded; concurrent writers must coordinate separately. Draft text and its original snapshot survive Activity recreation via the custom non-configuration instance, without placing large file contents into a saved-state Bundle. Process-death draft recovery is not supplied.
+
+`StudioPanes` owns two real terminal views, each attached to a distinct session. `StudioTerminalView` selects the active view before touch/focus input, and the Activity and shared extra keys follow it. Choosing a visible session selects its pane. Output notifications update whichever view owns that session. A collapsed second view is detached, preventing it from imposing an obsolete PTY size. UI recreation reuses service sessions; it never starts a shell solely to restore a split. Font/color updates reach both views and session colors. Pane orientation and the last secondary handle are local preferences.
+
+`HostProfile` validates endpoint fields and constructs argument arrays. `HostStore` keeps up to 50 endpoints in private preferences. `StudioHosts` requires an explicit connection action, then `StudioCommands` starts the existing OpenSSH executable in a new terminal session. Authentication and known_hosts checks remain owned by OpenSSH; no password, key or remote command is stored by the host UI.
+
+`StudioPackages` runs only local `apt-cache search` on a cancellable worker with a literal POSIX-regex query and up to 200 results. Catalog identifiers are validated before becoming arguments. Index updates, install/update, upgrade and removal are explicit interactive `pkg` sessions, with no automatic yes flag and no mutation of an existing shell's input. The configured APT repositories and signature validation remain intact.
+
+`TerminalTheme` validates all nineteen `#RRGGBB` fields and defines three presets. `StudioThemes` loads/writes colors.properties on a worker using Android AtomicFile, then reloads colors across the live sessions and both views. Applying a terminal scheme is distinct from choosing the workspace accent.
+
+`WorkspaceState` whitelists versioned JSON metadata and validates collection sizes, identifiers, absolute paths, command snippets, host profiles and scalar types before any preferences are changed. `StudioWorkspace` uses Android document pickers and bounded UTF-8 reads on a worker, confirms replacement, and retains a metadata snapshot for undo. Import never starts commands or sessions. A separate confirmed layout-restore action resolves every directory before opening fresh shells within the existing eight-session cap. Export includes session names/directories and pane orientation, not terminal contents, keys, passwords or live process state.

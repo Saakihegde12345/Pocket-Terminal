@@ -7,14 +7,24 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 public final class WorkspacePathsCheck {
-    private static int checks;
+    private static int requiredChecks;
+    private static int passedChecks;
+    private static int skippedChecks;
+    private static void passRequired() {
+        requiredChecks++;
+        passedChecks++;
+    }
     private static void check(boolean condition, String description) {
         if (!condition) throw new AssertionError(description);
-        checks++;
+        passRequired();
+    }
+    private static void optionalCheck(boolean condition, String description) {
+        if (!condition) throw new AssertionError(description);
+        passedChecks++;
     }
     private static void rejects(String input, File home) throws Exception {
         try { WorkspacePaths.resolveDirectory(input, home); }
-        catch (IOException expected) { checks++; return; }
+        catch (IOException expected) { passRequired(); return; }
         throw new AssertionError("Accepted invalid directory: " + input);
     }
     public static void main(String[] args) throws Exception {
@@ -45,11 +55,12 @@ public final class WorkspacePathsCheck {
             try {
                 Path link = temporary.resolve("symlink");
                 Files.createSymbolicLink(link, odd.toPath());
-                check(WorkspacePaths.resolveDirectory(link.toString(), home).equals(odd.getCanonicalFile()), "Canonicalize symlink target");
-            } catch (UnsupportedOperationException | java.nio.file.FileSystemException ignored) {
-                System.out.println("Symlink check unavailable on this filesystem.");
+                optionalCheck(WorkspacePaths.resolveDirectory(link.toString(), home).equals(odd.getCanonicalFile()), "Canonicalize symlink target");
+            } catch (UnsupportedOperationException | java.nio.file.FileSystemException | SecurityException ignored) {
+                skippedChecks++;
+                System.out.println("Symlink check skipped: symbolic-link creation unavailable (Windows may require Developer Mode or link privilege).");
             }
-            System.out.println("Workspace path checks passed: " + checks);
+            System.out.println("Workspace path checks: required=" + requiredChecks + ", passed=" + passedChecks + ", skipped=" + skippedChecks);
         } finally {
             try (java.util.stream.Stream<Path> paths = Files.walk(temporary)) {
                 paths.sorted(Comparator.reverseOrder()).forEach(path -> {

@@ -18,11 +18,14 @@ import static com.termux.shared.termux.extrakeys.ExtraKeysConstants.PRIMARY_KEY_
 
 public class TerminalExtraKeys implements ExtraKeysView.IExtraKeysView {
 
-    private final TerminalView mTerminalView;
+    private TerminalView mTerminalView;
 
     public TerminalExtraKeys(@NonNull TerminalView terminalView) {
         mTerminalView = terminalView;
     }
+
+    /** Route shared extra keys to the pane the user selected. */
+    public void setTerminalView(@NonNull TerminalView terminalView) { mTerminalView = terminalView; }
 
     @Override
     public void onExtraKeyButtonClick(View view, ExtraKeyButton buttonInfo, MaterialButton button) {

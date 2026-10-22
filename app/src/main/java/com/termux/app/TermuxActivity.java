@@ -254,6 +254,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         setToggleKeyboardView();
 
         mStudioChrome = new com.termux.app.studio.StudioChrome(this);
+        mStudioChrome.restoreEditorDraft(getLastCustomNonConfigurationInstance());
 
         registerForContextMenu(mTerminalView);
 
@@ -379,6 +380,11 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         super.onSaveInstanceState(savedInstanceState);
         saveTerminalToolbarTextInput(savedInstanceState);
         savedInstanceState.putBoolean(ARG_ACTIVITY_RECREATED, true);
+    }
+
+    @Override
+    public Object onRetainCustomNonConfigurationInstance() {
+        return mStudioChrome == null ? null : mStudioChrome.retainEditorDraft();
     }
 
 
@@ -799,6 +805,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (mStudioChrome != null && mStudioChrome.onActivityResult(requestCode, resultCode, data)) return;
         Logger.logVerbose(LOG_TAG, "onActivityResult: requestCode: " + requestCode + ", resultCode: "  + resultCode + ", data: "  + IntentUtils.getIntentString(data));
         if (requestCode == PermissionUtils.REQUEST_GRANT_STORAGE_PERMISSION) {
             requestStoragePermission(true);
@@ -885,6 +892,26 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
 
     public void showStudioPalette() {
         if (mStudioChrome != null) mStudioChrome.showPalette();
+    }
+
+    public void activateStudioTerminalView(TerminalView view) {
+        if (mTerminalView == view) return;
+        if (mTerminalView != null) mTerminalView.setTerminalCursorBlinkerState(false, true);
+        mTerminalView = view;
+        if (mProperties != null && view.setTerminalCursorBlinkerRate(mProperties.getTerminalCursorBlinkRate()))
+            view.setTerminalCursorBlinkerState(mIsVisible, true);
+        if (mTermuxTerminalExtraKeys != null) mTermuxTerminalExtraKeys.setTerminalView(view);
+        if (mTermuxTerminalSessionActivityClient != null)
+            mTermuxTerminalSessionActivityClient.updateBackgroundColor();
+        refreshStudioChrome();
+    }
+
+    public void selectStudioSession(TerminalSession session) {
+        if (mStudioChrome != null) mStudioChrome.selectSession(session);
+    }
+
+    public TerminalView[] getStudioTerminalViews() {
+        return mStudioChrome == null ? new TerminalView[]{mTerminalView} : mStudioChrome.terminalViews();
     }
 
     public boolean isVisible() {

@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 
 import com.termux.R;
 import com.termux.app.TermuxActivity;
+import com.termux.app.studio.WorkspacePaths;
 import com.termux.shared.termux.shell.command.runner.terminal.TermuxSession;
 import com.termux.terminal.TerminalSession;
 
@@ -59,8 +60,8 @@ public class TermuxSessionsListViewController extends ArrayAdapter<TermuxSession
             ContextCompat.getDrawable(mActivity, R.drawable.studio_session_background)
         );
 
-        String name = sessionAtRow.mSessionName;
-        String sessionTitle = sessionAtRow.getTitle();
+        String name = WorkspacePaths.safeLabel(sessionAtRow.mSessionName);
+        String sessionTitle = WorkspacePaths.safeLabel(sessionAtRow.getTitle());
 
         String numberPart = "[" + (position + 1) + "] ";
         String sessionNamePart = (TextUtils.isEmpty(name) ? "" : name);

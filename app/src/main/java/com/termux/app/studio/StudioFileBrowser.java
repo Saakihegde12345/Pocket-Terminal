@@ -39,12 +39,14 @@ final class StudioFileBrowser {
     private final TermuxActivity activity;
     private final OpenShell openShell;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final StudioFileEditor editor;
     private Dialog dialog;
     private boolean closed;
 
     StudioFileBrowser(TermuxActivity activity, OpenShell openShell) {
         this.activity = activity;
         this.openShell = openShell;
+        editor = new StudioFileEditor(activity, worker);
     }
 
     void show(File root) {
@@ -74,6 +76,7 @@ final class StudioFileBrowser {
         final TextView hidden;
         final TextView copy;
         final TextView shell;
+        final TextView edit;
         final ListView list;
         final TextView source;
         final ScrollView preview;
@@ -88,6 +91,7 @@ final class StudioFileBrowser {
         boolean active = true;
         boolean showHidden;
         boolean previewing;
+        WorkspaceFiles.Preview loaded;
 
         Panel(File root) {
             this.root = root;
@@ -153,6 +157,12 @@ final class StudioFileBrowser {
                 if (target != null && !closed) openShell.open(target);
             });
             controls.addView(shell);
+            edit = button(activity.getString(R.string.studio_edit_snippet), R.string.studio_edit_file);
+            edit.setEnabled(false);
+            edit.setOnClickListener(v -> {
+                if (loaded != null) editor.show(root, loaded, () -> { if (active && !closed) read(previewTarget); });
+            });
+            controls.addView(edit, 2);
             HorizontalScrollView toolbar = new HorizontalScrollView(activity);
             toolbar.setHorizontalScrollBarEnabled(true);
             toolbar.addView(controls);
@@ -239,6 +249,8 @@ final class StudioFileBrowser {
             previewing = file;
             if (file) previewTarget = target;
             selected = null;
+            loaded = null;
+            edit.setEnabled(false);
             copy.setEnabled(false);
             shell.setEnabled(false);
             up.setText(file ? R.string.studio_back_to_folder : R.string.studio_parent_folder);
@@ -295,6 +307,8 @@ final class StudioFileBrowser {
                     activity.runOnUiThread(() -> {
                         if (!current(request)) return;
                         selected = result.file;
+                        loaded = result;
+                        edit.setEnabled(true);
                         path.setText(WorkspacePaths.safeLabel(result.file.getPath()));
                         source.setText(result.text);
                         preview.scrollTo(0, 0);
@@ -309,8 +323,12 @@ final class StudioFileBrowser {
 
     void close() {
         closed = true;
+        editor.close();
         if (dialog != null) dialog.dismiss();
         dialog = null;
         worker.shutdownNow();
     }
+
+    Object retainDraft() { return editor.retainDraft(); }
+    void restoreDraft(Object draft) { editor.restoreDraft(draft); }
 }
